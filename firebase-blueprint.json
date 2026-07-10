@@ -1,0 +1,37 @@
+{
+  "collections": [
+    {
+      "name": "apartments",
+      "description": "Stores all apartment units",
+      "schema": {
+        "buildingName": "string",
+        "floor": "string",
+        "apartmentNumber": "string",
+        "description": "string",
+        "images": "array of strings",
+        "status": "string (available, occupied)",
+        "price": "number"
+      },
+      "securityRules": {
+        "read": "true",
+        "write": "true"
+      }
+    },
+    {
+      "name": "bookings",
+      "description": "Stores apartment bookings made by customers",
+      "schema": {
+        "apartmentId": "string",
+        "customerName": "string",
+        "customerId": "string",
+        "customerMobile": "string",
+        "paymentMethod": "string",
+        "createdAt": "timestamp"
+      },
+      "securityRules": {
+        "read": "true",
+        "write": "true"
+      }
+    }
+  ]
+}

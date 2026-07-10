@@ -1,0 +1,6 @@
+{
+  "name": "شقق طيبة",
+  "description": "تطبيق حجز شقق فندقية أو مفروشة يتيح للعملاء تصفح الشقق المتاحة، حجزها، والحصول على إيصال PDF. يحتوي على لوحة تحكم للإدارة لإضافة الشقق وتتبع الحجوزات وتصدير البيانات إلى إكسيل.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
