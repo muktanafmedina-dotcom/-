@@ -15,6 +15,8 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(false);
   
   const [activeTab, setActiveTab] = useState<'apartments' | 'booking_requests' | 'confirmed_bookings'>('apartments');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   // Form states for new apartment
   const [newApt, setNewApt] = useState({ buildingName: '', floor: '', apartmentNumber: '', description: '', price: '' });
@@ -201,8 +203,18 @@ export default function AdminDashboard() {
   };
   
   const exportToExcel = () => {
-    const sortedBookings = [...bookings].sort((a, b) => b.createdAt - a.createdAt);
-    const wsBookings = XLSX.utils.json_to_sheet(sortedBookings.map(b => ({
+    let filteredBookings = [...bookings].sort((a, b) => b.createdAt - a.createdAt);
+    
+    if (startDate) {
+      const startTimestamp = new Date(startDate).setHours(0, 0, 0, 0);
+      filteredBookings = filteredBookings.filter(b => b.createdAt >= startTimestamp);
+    }
+    if (endDate) {
+      const endTimestamp = new Date(endDate).setHours(23, 59, 59, 999);
+      filteredBookings = filteredBookings.filter(b => b.createdAt <= endTimestamp);
+    }
+
+    const mapBooking = (b: Booking) => ({
       'تاريخ الحجز': new Date(b.createdAt).toLocaleString('ar-SA'),
       'الاسم': b.customerName,
       'الهوية': b.customerId,
@@ -213,7 +225,14 @@ export default function AdminDashboard() {
       'الطابق': b.apartmentDetails?.floor || '',
       'الشقة': b.apartmentDetails?.apartmentNumber || '',
       'السعر': b.apartmentDetails?.price || '',
-    })));
+      'الحالة': b.status === 'approved' ? 'مؤكد' : b.status === 'rejected' ? 'مرفوض' : 'معلق',
+    });
+
+    const requests = filteredBookings.filter(b => b.status === 'pending' || b.status === 'rejected');
+    const confirmed = filteredBookings.filter(b => b.status === 'approved');
+
+    const wsRequests = XLSX.utils.json_to_sheet(requests.map(mapBooking));
+    const wsConfirmed = XLSX.utils.json_to_sheet(confirmed.map(mapBooking));
     
     const wsApartments = XLSX.utils.json_to_sheet(apartments.map(a => ({
       'العمارة': a.buildingName,
@@ -224,11 +243,12 @@ export default function AdminDashboard() {
     })));
 
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, wsBookings, "الحجوزات");
-    XLSX.utils.book_append_sheet(wb, wsApartments, "الشقق");
+    XLSX.utils.book_append_sheet(wb, wsApartments, "الشقق وحالتها");
+    XLSX.utils.book_append_sheet(wb, wsRequests, "طلبات الحجوزات");
+    XLSX.utils.book_append_sheet(wb, wsConfirmed, "الحجوزات المؤكدة");
     
     const currentDate = new Date().toLocaleDateString('ar-SA').replace(/\//g, '-');
-    XLSX.writeFile(wb, `تقرير_الحجوزات_${currentDate}.xlsx`);
+    XLSX.writeFile(wb, `تقرير_النظام_${currentDate}.xlsx`);
   };
 
   if (!isAuthenticated) {
@@ -259,10 +279,17 @@ export default function AdminDashboard() {
           <button onClick={() => setActiveTab('booking_requests')} className={`px-6 py-2.5 rounded-xl font-bold transition-all ${activeTab === 'booking_requests' ? 'bg-royal-900 text-gold-500 shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>طلبات الحجوزات</button>
           <button onClick={() => setActiveTab('confirmed_bookings')} className={`px-6 py-2.5 rounded-xl font-bold transition-all ${activeTab === 'confirmed_bookings' ? 'bg-royal-900 text-gold-500 shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>الحجوزات المؤكدة</button>
         </div>
-        <button onClick={exportToExcel} className="flex items-center gap-2 bg-[#f9f6f0] text-[#8c7322] border border-[#D4AF37] px-6 py-2.5 rounded-xl font-bold hover:bg-[#f2ebd9] transition-all shadow-sm hover:shadow-md w-full md:w-auto justify-center">
-          <Download className="w-4 h-4" />
-          تصدير التقرير
-        </button>
+        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto items-center">
+          <div className="flex items-center gap-2 text-sm text-gray-500 w-full sm:w-auto">
+            <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="p-2 border border-gray-200 rounded-lg outline-none flex-1 sm:w-auto" />
+            <span>إلى</span>
+            <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="p-2 border border-gray-200 rounded-lg outline-none flex-1 sm:w-auto" />
+          </div>
+          <button onClick={exportToExcel} className="flex items-center gap-2 bg-[#f9f6f0] text-[#8c7322] border border-[#D4AF37] px-6 py-2.5 rounded-xl font-bold hover:bg-[#f2ebd9] transition-all shadow-sm hover:shadow-md w-full sm:w-auto justify-center">
+            <Download className="w-4 h-4" />
+            تصدير التقرير
+          </button>
+        </div>
       </div>
 
       {activeTab === 'apartments' && (
